@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Archivo Black", sans-serif;
+  --font-body: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --color-paper: #fffdf5;
+  --color-ink: #111111;
+  --color-brutal-yellow: #ffdc00;
+  --color-brutal-teal: #00c2a8;
+  --color-brutal-red: #ff4d00;
+  --color-brutal-blue: #2d7ff9;
+  --color-brutal-pink: #ff90e8;
+}
+
+html, body {
+  background: #fffdf5;
+  color: #111111;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.font-display { font-family: "Archivo Black", sans-serif; }
+.font-mono2 { font-family: "Space Mono", monospace; }
+
+.brutal-card {
+  background: #fff;
+  border: 3px solid #111;
+  box-shadow: 5px 5px 0 #111;
+}
+.brutal-card-hover { transition: transform .12s ease, box-shadow .12s ease; }
+.brutal-card-hover:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #111; }
+
+.brutal-btn {
+  border: 3px solid #111;
+  box-shadow: 4px 4px 0 #111;
+  transition: transform .1s ease, box-shadow .1s ease;
+  font-weight: 700;
+}
+.brutal-btn:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #111; }
+.brutal-btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 #111; }
+
+.brutal-input {
+  border: 3px solid #111 !important;
+  background: #fffdf5 !important;
+  color: #111 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+}
+.brutal-input:focus { box-shadow: 4px 4px 0 #00c2a8; }
+
+.dot-bg {
+  background-image: radial-gradient(#111 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+.sticker { transform: rotate(-2deg); }
+.sticker-r { transform: rotate(2deg); }
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { display: flex; width: max-content; animation: marquee 22s linear infinite; }
