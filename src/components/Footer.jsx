@@ -1,32 +1,41 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
-    <footer className="border-t-4 border-black bg-black px-4 py-10 text-white">
-      <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
+    <footer className="site-footer">
+      <div className="site-footer-inner">
         <div>
-          <p className="font-display text-sm uppercase">DSA<span className="bg-[#FFDC00] px-1 text-black">Arcade</span></p>
-          <p className="mt-2 text-sm text-neutral-300">Gamified DSA prep. Learn fast with quests, battles and streaks.</p>
-          <p className="mt-2 font-mono2 text-[11px] text-neutral-400">API: http://localhost:5000</p>
+          <p className="brand"><span className="brand-mark">$</span><span className="brand-name">dsa arcade</span></p>
+          <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+            Hands-on DSA labs in your browser.
+          </p>
         </div>
-        <div>
-          <p className="font-bold uppercase text-[#FFDC00]">Curriculum</p>
-          <ul className="mt-2 space-y-1 text-sm text-neutral-200"><li>Arrays & Strings</li><li>Trees & Graphs</li><li>Dynamic Programming</li><li>System Design Intro</li></ul>
+        <div className="site-footer-col">
+          <div className="site-footer-title">Product</div>
+          <Link to="/">Catalog</Link>
+          <a href="#tracks">Tracks</a>
+          <a href="#pricing">Pricing</a>
+          <Link to="/dashboard">Dashboard</Link>
         </div>
-        <div>
-          <p className="font-bold uppercase text-[#FFDC00]">Company</p>
-          <ul className="mt-2 space-y-1 text-sm text-neutral-200"><li>Method</li><li>Results</li><li>Pricing</li><li>Contact</li></ul>
+        <div className="site-footer-col">
+          <div className="site-footer-title">Company</div>
+          <a href="#method">About</a>
+          <a href="#pricing">Terms</a>
+          <a href="#faq">Privacy</a>
+          <a href="#faq">Contact</a>
         </div>
-        <div>
-          <p className="font-bold uppercase text-[#FFDC00]">Sources</p>
-          <ul className="mt-2 space-y-1 font-mono2 text-[11px] text-neutral-300">
-            <li>Retention +45% — Global Growth Insights 2025</li>
-            <li>Engagement +50% avg — industry meta 2025</li>
-            <li>83% motivated — TalentLMS</li>
-            <li>Market $29.46B→$80.22B — Mordor 2026</li>
-            <li>3000+ LeetCode Qs; 20+ solves = +50% pass — HackerRank/IDC</li>
-          </ul>
+        <div className="site-footer-col">
+          <div className="site-footer-title">Social</div>
+          <a href="#results">Community</a>
+          <a href="#faq">Docs</a>
+          <Link to="/register">Start free</Link>
+          <Link to="/login">Login</Link>
         </div>
       </div>
-      <p className="mx-auto mt-8 max-w-7xl font-mono2 text-[11px] text-neutral-400">Stats: retention +45% (Global Growth Insights), HackerRank/IDC interview data. Illustrative product numbers — replace with your cohort data.</p>
+      <div className="site-footer-legal">
+        <span>© 2026 dsa arcade</span>
+        <span>runs in your browser</span>
+      </div>
     </footer>
   );
 }

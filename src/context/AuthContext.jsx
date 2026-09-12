@@ -21,16 +21,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // Re-validate cached token on boot; drop it if backend says 401.
+  // Re-validate cached token on boot against current backend.
+  // Backend: GET /api/v1/users/me returns flat profile (not {user}).
   useEffect(() => {
     const validate = async () => {
       const t = localStorage.getItem(TOKEN_KEY);
       if (!t) { setInitializing(false); return; }
       try {
-        const res = await api.get("/api/auth/me");
-        if (res.data?.user) {
-          setUser(res.data.user);
-          localStorage.setItem(USER_KEY, JSON.stringify(res.data.user));
+        const res = await api.get("/api/v1/users/me");
+        const u = res.data?.user || res.data || null;
+        if (u) {
+          setUser(u);
+          localStorage.setItem(USER_KEY, JSON.stringify(u));
         } else {
           clearSession();
         }
@@ -50,22 +52,35 @@ export function AuthProvider({ children }) {
   }, [clearSession]);
 
   const saveSession = (data) => {
-    const t = data?.token || data?.accessToken || null;
-    const u = data?.user || null;
-    if (!t) throw new Error("Server did not return a login token. Please try again.");
-    localStorage.setItem(TOKEN_KEY, t);
-    setToken(t);
+    // Supports current + future backend shapes: token | accessToken | access_token
+    const t = data?.token || data?.accessToken || data?.access_token || null;
+    const u = data?.user || data?.profile || null;
+    if (t) {
+      localStorage.setItem(TOKEN_KEY, t);
+      setToken(t);
+    }
     if (u) {
       localStorage.setItem(USER_KEY, JSON.stringify(u));
       setUser(u);
     }
+    return { token: t, user: u };
+  };
+
+  const extractMessage = (err) => {
+    const d = err?.response?.data;
+    if (!d) return null;
+    if (typeof d.detail === "string") return d.detail;
+    if (Array.isArray(d.detail) && d.detail[0]?.msg) return d.detail[0].msg;
+    return d.message || d.error || null;
   };
 
   const toFieldErrors = (err) => {
-    // Normalize backend failures -> { message, fields: { email?, username?, password? }, retryAfter }
-    if (!err?.response) return { message: "Cannot reach server at http://localhost:5000. Is the backend running?", fields: {} };
+    if (!err?.response) return { message: "Cannot reach the server. Please check your connection and try again.", fields: {} };
     const status = err.response.status;
-    const msg = err.response.data?.message || err.response.data?.error || `Request failed (${status})`;
+    if (status === 404 && err.config?.url?.includes("/api/v1/auth/login")) {
+      return { message: "Login endpoint not in backend yet (only /register exists). Register first, then continue.", fields: {}, status };
+    }
+    const msg = extractMessage(err) || `Request failed (${status})`;
     const fields = {};
     const lower = msg.toLowerCase();
     if (lower.includes("email")) fields.email = msg;
@@ -78,10 +93,20 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await api.post("/api/auth/login", { email, password });
-      saveSession(res.data);
+      const res = await api.post("/api/v1/auth/login", { email, password });
+      const s = saveSession(res.data);
+      if (!s.token && !s.user) {
+        // Backend returned something unexpected — keep data for debugging
+        if (res.data && typeof res.data === "object") {
+          localStorage.setItem(USER_KEY, JSON.stringify(res.data));
+          setUser(res.data);
+          return res.data;
+        }
+        throw new Error("Login endpoint not in backend yet. Register first.");
+      }
       return res.data;
     } catch (err) {
+      if (err.message === "Login endpoint not in backend yet. Register first.") throw err;
       const norm = toFieldErrors(err);
       const e = new Error(norm.message);
       e.fields = norm.fields; e.status = norm.status; e.retryAfter = norm.retryAfter;
@@ -92,8 +117,14 @@ export function AuthProvider({ children }) {
   const register = async (username, email, password) => {
     setLoading(true);
     try {
-      const res = await api.post("/api/auth/register", { username, email, password });
-      saveSession(res.data);
+      // Current backend: POST /api/v1/auth/register -> UserResponse (no token)
+      const res = await api.post("/api/v1/auth/register", { username, email, password });
+      const s = saveSession(res.data);
+      if (s.token) return res.data;
+      // No token in response — store profile as logged-in guest user
+      const profile = res.data || { username, email };
+      localStorage.setItem(USER_KEY, JSON.stringify(profile));
+      setUser(profile);
       return res.data;
     } catch (err) {
       const norm = toFieldErrors(err);
@@ -107,11 +138,11 @@ export function AuthProvider({ children }) {
     const name = (username || "").trim();
     if (name.length < 3) return { available: false, message: "Min 3 characters" };
     try {
-      const res = await api.get("/api/auth/check-username", { params: { username: name } });
+      const res = await api.get("/api/v1/auth/check-username", { params: { username: name } });
       return { available: !!res.data?.available, message: res.data?.message || "" };
     } catch (err) {
       if (!err?.response) return { available: null, message: "Offline — cannot check" };
-      return { available: false, message: err.response.data?.message || "Unavailable" };
+      return { available: false, message: extractMessage(err) || "Unavailable" };
     }
   }, []);
 
@@ -123,7 +154,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, token, loading, initializing,
-      isAuthenticated: !!token, login, register, logout, checkUsername,
+      isAuthenticated: !!token || !!user, login, register, logout, checkUsername,
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Gamepad2, Menu, X, LogOut } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const SECTIONS = [
@@ -11,11 +11,22 @@ const SECTIONS = [
   ["faq", "FAQ"],
 ];
 
+function getTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState(getTheme);
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isHome = location.pathname === "/";
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("dsa:theme", theme); } catch { /* noop */ }
+  }, [theme]);
 
   const handleLogout = () => {
     logout();
@@ -23,7 +34,6 @@ export default function Navbar() {
     navigate("/", { replace: true });
   };
 
-  // Works from ANY route (dashboard, login, 404): go home first, then scroll.
   const goSection = (id) => {
     setOpen(false);
     if (location.pathname !== "/") {
@@ -34,53 +44,80 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b-4 border-black bg-[#FFFDF5]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <span className="border-2 border-black bg-[#FFDC00] p-1.5 shadow-[3px_3px_0_#111]"><Gamepad2 size={20} strokeWidth={2.5} /></span>
-          <span className="font-display text-sm uppercase tracking-tight">DSA<span className="bg-black px-1 text-[#FFDC00]">Arcade</span></span>
+    <>
+      <header className="topbar">
+        <Link to="/" className="brand" onClick={() => setOpen(false)}>
+          <span className="brand-mark">$</span>
+          <span className="brand-name">dsa arcade</span>
         </Link>
-        <div className="hidden items-center gap-5 text-sm font-bold uppercase md:flex">
-          {SECTIONS.map(([id, label]) => (
-            <button key={id} onClick={() => goSection(id)} className="border-b-2 border-transparent hover:border-black uppercase">{label}</button>
-          ))}
+        <div className="topbar-search">
+          <input
+            type="search"
+            placeholder="Search tracks, patterns, topics…"
+            aria-label="Search the catalog"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") goSection("tracks");
+            }}
+          />
         </div>
-        <div className="hidden items-center gap-2 md:flex">
-          {isAuthenticated ? (
-            <>
-              <button onClick={() => navigate("/dashboard")} className="brutal-btn bg-white px-4 py-2 text-xs uppercase">{user?.username || "Player"} ▸ Dash</button>
-              <button onClick={handleLogout} className="brutal-btn flex items-center gap-1 bg-black px-4 py-2 text-xs uppercase text-white"><LogOut size={14} /> Logout</button>
-            </>
+        <nav className="nav-links">
+          {isHome ? (
+            SECTIONS.map(([id, label]) => (
+              <button key={id} onClick={() => goSection(id)} className="nav-link">{label}</button>
+            ))
           ) : (
             <>
-              <Link to="/login" className="brutal-btn bg-white px-4 py-2 text-xs uppercase">Login</Link>
-              <Link to="/register" className="brutal-btn bg-[#FFDC00] px-4 py-2 text-xs uppercase">Start Free →</Link>
+              <Link to="/" className="nav-link">Home</Link>
+              {isAuthenticated && <Link to="/dashboard" className="nav-link">Dashboard</Link>}
             </>
           )}
-        </div>
-        <button aria-label="Menu" className="border-2 border-black bg-white p-1 md:hidden" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
-      </div>
+          {!isHome && <Link to="/login" className="nav-link">Leaderboard</Link>}
+        </nav>
+        <button
+          className="theme-toggle"
+          title={`Skin: ${theme}. Click to switch.`}
+          aria-label="Switch theme"
+          onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+        >
+          ◐
+        </button>
+        {isAuthenticated ? (
+          <span className="hidden md:flex items-center gap-2">
+            <button onClick={() => navigate("/dashboard")} className="ld-btn-s" style={{ padding: "0.4rem 0.8rem" }}>{user?.username || "learner"} → lab</button>
+            <button onClick={handleLogout} className="ld-btn-p" style={{ padding: "0.4rem 0.8rem" }}><LogOut size={14} /></button>
+          </span>
+        ) : (
+          <span className="hidden md:flex items-center gap-2">
+            <Link to="/login" className="ld-btn-s" style={{ padding: "0.4rem 0.8rem" }}>Login</Link>
+            <Link to="/register" className="ld-btn-p" style={{ padding: "0.4rem 0.8rem" }}>Start free</Link>
+          </span>
+        )}
+        <button aria-label="Menu" className="nav-burger" onClick={() => setOpen(!open)}>{open ? <X size={16} /> : <Menu size={16} />}</button>
+      </header>
       {open && (
-        <div className="space-y-2 border-t-4 border-black bg-[#FFFDF5] px-4 py-3 md:hidden">
-          <div className="grid grid-cols-2 gap-2">
-            {SECTIONS.map(([id, label]) => (
-              <button key={id} onClick={() => goSection(id)} className="brutal-btn bg-white px-3 py-2 text-center text-xs uppercase">{label}</button>
-            ))}
+        <div className="mobile-nav md:hidden">
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            {isHome ? (
+              SECTIONS.map(([id, label]) => (
+                <button key={id} onClick={() => goSection(id)} className="ld-btn-s">{label}</button>
+              ))
+            ) : (
+              <>
+                <Link to="/" onClick={() => setOpen(false)} className="ld-btn-s">Home</Link>
+                {isAuthenticated && <Link to="/dashboard" onClick={() => setOpen(false)} className="ld-btn-s">Dashboard</Link>}
+              </>
+            )}
           </div>
           {isAuthenticated ? (
-            <>
-              <p className="border-2 border-black bg-[#FFDC00] px-3 py-2 text-center text-sm font-bold uppercase">▶ {user?.username || "Player"}</p>
-              <button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="brutal-btn block w-full bg-white px-3 py-2 text-center text-sm uppercase">Dashboard</button>
-              <button onClick={handleLogout} className="brutal-btn flex w-full items-center justify-center gap-1 bg-black px-3 py-2 text-center text-sm uppercase text-white"><LogOut size={14} /> Logout</button>
-            </>
+            <button onClick={handleLogout} className="ld-btn-p">Logout</button>
           ) : (
-            <>
-              <Link to="/login" onClick={() => setOpen(false)} className="brutal-btn block bg-white px-3 py-2 text-center text-sm uppercase">Login</Link>
-              <Link to="/register" onClick={() => setOpen(false)} className="brutal-btn block bg-[#FFDC00] px-3 py-2 text-center text-sm uppercase">Start Free</Link>
-            </>
+            <span style={{ display: "flex", gap: "0.5rem" }}>
+              <Link to="/login" onClick={() => setOpen(false)} className="ld-btn-s">Login</Link>
+              <Link to="/register" onClick={() => setOpen(false)} className="ld-btn-p">Start free</Link>
+            </span>
           )}
         </div>
       )}
-    </nav>
+    </>
   );
 }
